@@ -1,16 +1,17 @@
 ## -----------------------------------------------------------------------------
 ## load data set (make sure files are in R working directory!
 ## -----------------------------------------------------------------------------
+
 ## rnaCounts: data.frame containing RNA-seq counts for each gene in each sample
 ## (genes are in rows of data.frame, samples in columns):
-rnaCounts = read.table("rna_counts.tsv.gz",
-                       sep="\t", header=TRUE, row.names=1, check.names=FALSE)
+rnaCounts = read.table("CONVERTED_COAD_GCM.csv",
+                       sep=",", header=TRUE, row.names=1, check.names=FALSE)
 
 ## sampleAnnotation: data.frame with one row per sample; columns say what
 ## group (=combination of genotype+time), genotype, and time
 ## describe each sample:
-sampleAnnotation = read.table("rna_sample_annotation.tsv",
-                              sep="\t", header=TRUE, row.names=1, check.names=FALSE)
+sampleAnnotation = read.table("COAD_sample_annotation.csv",
+                              sep=",", header=TRUE, row.names=1, check.names=FALSE)
 
 ## geneNamesAndDescriptions: data.frame with rownames corresponding to gene
 ## ids and three columns:
