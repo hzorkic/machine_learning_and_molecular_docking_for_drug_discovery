@@ -1,0 +1,88 @@
+THis is with random genes + gene sig (100 total)
+
+
+# define baseline model
+# create model
+def baseline_model():
+   # create model
+    model = Sequential()
+    model.add(Dense(32, input_dim=100, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    # Compile model
+    model.compile(loss='binary_crossentropy', optimizer='Nadam', metrics=['accuracy'])
+    return model
+
+genes used:
+['SLAIN1',
+ 'ST6GALNAC3',
+ 'PLXDC2',
+ 'LYAR',
+ 'RN7SKP269',
+ 'CYP4V2',
+ 'RABEP1',
+ 'PAIP2B',
+ 'ADA2',
+ 'RNF175',
+ 'MAPK10',
+ 'ADORA2A',
+ 'POLR2L',
+ 'QRFPR',
+ 'AKAP17A_636',
+ 'METTL16',
+ 'GRAP',
+ 'DDA1',
+ 'NPM1P32',
+ 'DDX59',
+ 'SGSM1',
+ 'RNASE3',
+ 'TPMT',
+ 'FBXW9',
+ 'ACOX2',
+ 'TMEM204',
+ 'SERF1A_0',
+ 'RMDN1',
+ 'LIMK1',
+ 'CCIN',
+ 'GPAT3',
+ 'JUND',
+ 'IPCEF1',
+ 'ANO8',
+ 'ZFAND4',
+ 'SPDYE18',
+ 'PRKAA2',
+ 'XRCC4',
+ 'TRAF6',
+ 'RHPN1',
+ 'UGCG',
+ 'MAPK9',
+ 'TRIM17',
+ 'SMCO4',
+ 'CELF2',
+ 'NOXA1',
+ 'POLR2G',
+ 'FLT3LG',
+ 'IL1B',
+ 'PPM1J',
+ 'PEX11B',
+ 'GJB7',
+ 'PSD3',
+ 'EDN3',
+ 'REEP1',
+ 'SLC9A3R1',
+ 'TMEM221',
+ 'STARD3',
+ 'DPEP3',
+ 'IGHG2',
+ 'DAP3',
+ 'DMTF1',
+ 'HMCES',
+ 'SPICE1',
+ 'CEP63',
+ 'PHLDB1',
+ 'ANGPT4',
+ 'MAMSTR',
+ 'IGFBP1',
+ 'HELZ2',
+ 'NLE1']

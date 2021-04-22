@@ -1,0 +1,10 @@
+# create model for small gene set
+def baseline_model():
+   # create model
+    model = Sequential()
+    model.add(Dense(16, input_dim=29, activation='relu'))
+    model.add(Dense(16, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    # Compile model
+    model.compile(loss='binary_crossentropy', optimizer='Nadam', metrics=['accuracy'])
+    return model
