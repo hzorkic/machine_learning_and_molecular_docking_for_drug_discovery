@@ -1,25 +1,42 @@
+# In this report, we are primarily interested in understanding how the 
+# differences in gene expression between healthy and canerous tissue samples
+# from The Cancer Genome Altas (TCGA)
+
+
+##################
+# load libraries #
+##################
 library(DESeq2)
 library(tidyverse)
+library(ggplot2)
 library(matrixStats)
 library(pheatmap)
-source("bio321g_rnaseq_utils.R")
-
-rnaCounts 
-
-### 1.  DESeq
 
 
-## rnaCounts: data.frame containing RNA-seq counts for each gene in each sample
-## (genes are in rows of data.frame, samples in columns):
+################################################
+# Perform DESeq analysis on our raw RNA counts #
+################################################
+# A DESeqDataSet Object was constructed on the gene expression data using the 
+# DESeq package to perform a hypothesis test for the significance of tissue type
+# in the model
+
+# rnaCounts: data.frame containing RNA-seq counts for each gene in each sample
+# (genes are in rows of data.frame, samples in columns):
 rnaCounts = read.table("CONVERTED_COAD_GCM.csv",
-                       sep=",", header=TRUE, row.names=1, check.names=FALSE)
+                       sep=",", 
+                       header=TRUE, 
+                       row.names=1, 
+                       check.names=FALSE)
 
-## sampleAnnotation: data.frame with one row per sample; columns say what
-## group (=combination of genotype+time), genotype, and time
-## describe each sample:
+# sampleAnnotation: data.frame with one row per sample; columns say what
+# group (=tissue cancerous or not) describe each sample:
 sampleAnnotation = read.table("COAD_sample_annotation.csv",
-                              sep=",", header=TRUE, row.names=1, check.names=FALSE)
-## first initialize DESeq object:
+                              sep=",", 
+                              header=TRUE, 
+                              row.names=1, 
+                              check.names=FALSE)
+
+# first initialize DESeq object:
 dds <- DESeqDataSetFromMatrix(
   ## countData argument should be numeric matrix (or data.frame with
   ## only numeric columns which can be coerced to numeric matrix):
@@ -36,64 +53,114 @@ dds <- DESeqDataSetFromMatrix(
   ## modeling with lm:
   design = ~ tissue)
 
-## now run DESeq analysis pipeline on object dds in order to perform a hypothesis test specifically for the significance of the interaction term 
+# now run DESeq analysis pipeline on object dds in order to perform a hypothesis 
+# test specifically for the significance of the interaction term 
 dds <-  DESeq(dds)
-##Finally, use the results function from the DESeq2 package to extract a table of results for each gene from the DESeqDataSet object.
-## sort dds results data.frame by p-value:
+
+#Finally, use the results function from the DESeq2 package to extract a table of 
+# results for each gene from the DESeqDataSet object.
+# sort dds results data.frame by p-value:
 ddsresults <- results(dds)
 ddsresults <- ddsresults[order(ddsresults$pvalue), ]
-
 ddsresults
 
-## genes from the full rnacounts data are considered to have significant time:geneotype interaction terms to keep the False Discovery Rate at 10%. 
-False_Discovered_Genes <- sum(ddsresults$padj < 0.1, na.rm=TRUE ) 
-print(False_Discovery_Genes)
 
-## of our our list of genes with evidence of significant interactions would be considered False Positives. 
-False_Positive_Genes <- False_Discovery_Genes*.1
-print(False_Positive_Genes)
+##############################################################
+# Extract the Normalized Counts from the DESeqDataSet Object #
+##############################################################
 
-
-### 2. Extract the Normalized Counts from the DESeqDataSet Object 
-
-## use counts function with normalized arg set to TRUE to extract
-## "normalized counts" (which are not integers) from dds
-## (note: counts *function* from DESeq2 package is different object
-## in R than counts *data.frame* we loaded from tsv file;
-## R can tell based on context which one we mean):
+# use counts function with normalized arg set to TRUE to extract
+# "normalized counts" (which are not integers) from dds
+# (note: counts *function* from DESeq2 package is different object
+# in R than counts *data.frame* we loaded from csv file;
+# R can tell based on context which one we mean):
 normed <- counts(dds, normalized=TRUE)
-
-write.table(data.frame(normed),"COAD_normalized_counts.csv", sep = ",", row.names = FALSE, quote = FALSE)
-
-## save the normalized counts matrix to a tsv file:
+# log transform in order to  makes it easy to see proportional changes in 
+# expression levels in differential expression. For example we would observe 
+# a tumor gene to have positive expression in tumor tissue, but the same gene 
+# would have negative proportional expression in a healthy tissue
 lgNorm <- log2(normed + 1)
 
-### 5. Normalizing Genes
+# save the normalized counts matrix to a tsv file:
+write.table(data.frame(normed),
+            "COAD_normalized_counts.csv", 
+            sep = ",", row.names = FALSE, 
+            quote = FALSE)
 
-lgNorm <- log2(normed + 1)
+
+##########################################################
+# Generate a PCA Plot of Normalized Gene Expression Data #
+##########################################################
+# make sure lgNorm is a data.frame
 lgNorm <- data.frame(lgNorm)
-## make sure lgNorm is a data.frame
-## make the rownames a column name
+# make the rownames a column name
 lgNorm <- rownames_to_column(lgNorm, var = "gene")
-## make a new data.frame containing only the rows of normalized data that correspond to genes with a gene ontology id of GO:0006090
-lgGo <- lgNorm %>% filter(lgNorm[,1] %in% geneset$geneID)
-## get rid of the X's in front of the column names... I know there is a better way to do this, revisit 
-names(lgGo) <- c("gene","14BENDDAY2", "14BENDDAY4", "14BEXDARK2", "14BEXDARK3", "14BEXDARK4", "4GENDDAY2", "4GENDDAY3", "4GENDDAY4", "4GEXDARK2", "4GEXDARK3" , "COLENDDAY3" , "COLENDDAY5" , "COLEXDARK2" , "COLEXDARK3" , "COLEXDARK4")
-## remove gene column- make it row names
-lgGo <- column_to_rownames(lgGo, var = "gene")
+lgGo <- column_to_rownames(lgNorm, var = "gene")
 
-### 7. Gene Expression Heatmap of Normalized Gene Expression Data
+sampleAnnotation = data.frame(
+  ## set row.names of sampleAnnotation to match col.names of normed:
+  row.names = colnames(normed))
 
-heatData = lgGo - rowMeans(lgGo)
+# save
+write.csv(lgGo, file="log2transformed_and_normalized_gene_expression_data.csv")
 
-heatData[heatData > 2] = 2; heatData[heatData < -2] = -2
 
-pheatmap(
-  heatData,
-  color = heatPalette,
-  clustering_method = "average",
-  labels_row=geneNamesAndDescriptions[rownames(heatData), "symbol"]
-)
+pca = prcomp(t(lgGo))
+## perform PCA on Normalized data
+pcaFit = rowMeans(lgGo) + t( pca$x %*% t(pca$rotation) )
+## have to transpose pca$x %*% t(pca$rotation) above b/c lgNorm is t(z)
+## set up data.frame pcaData for ggplot...
+pcaData = data.frame(pca$x[ , 1:2])
+## add in sample annotation info
+pcaData$group = sampleAnnotation[rownames(pcaData), "group"]
+## and sample names
+pcaData$sample = rownames(pcaData)
+
+pcaData <- pcaData %>% data.frame()
+pcaData$group <- ifelse(grepl("Healthy", pcaData$sample, ignore.case = T), "Healthy", 
+                  ifelse(grepl("Tumor", pcaData$sample, ignore.case = T), "Tumor", "Other"))
+
+pcaData
+
+
+ggplot(pcaData, aes(x=PC1, y=PC2, label=sample, color = group)) + 
+  geom_point(size=4, shape = 18, alpha = 0.75) + 
+  scale_color_manual(values = c("Healthy" = "orange", "Tumor" = "maroon")) +
+  ggtitle("Principal Components Analysis (PCA) of TCGA COAD Tissue RnaSeq Data") + 
+  theme_light()
+
+
+##################################################
+# Genes with Significant Differential Expression #
+##################################################
+
+# order for top gene
+top <- ddsresults[order(ddsresults$padj),]
+
+# select only those genes with a padj greater than X (0.05)
+top <- data.frame(top) %>% filter(padj < 0.05)
+nrow(top)
+
+# select the top X genes (3000)
+top <- top[1:3000, ]
+# remove any rows that have NAs 
+top <- na.omit(top)
+
+# save
+write.csv(top, file="top_genes.csv")
+
+
+##############################################
+# Heatmap of Normalized Gene Expression Data #
+##############################################
+
+# IMPORTANT::: I would actually just input the 
+# log2transformed_and_normalized_gene_expression_data.csv 
+# Gene Expression Data into Morpheus: 
+# https://software.broadinstitute.org/morpheus/
+
+
+
 
 
 
